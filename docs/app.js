@@ -528,50 +528,37 @@ function renderElements() {
   if (els.length === 0) {
     const empty = document.createElement("div");
     empty.className = "subtitle";
+    empty.style.padding = "12px";
     empty.textContent = "No elements match the current filter.";
     container.appendChild(empty);
     return;
   }
 
   for (const el of els) {
-    const card = document.createElement("div");
-    card.className = "element";
+    const row = document.createElement("div");
+    row.className = "elemRow";
 
-    const top = document.createElement("div");
-    top.className = "element__top";
+    const idCell = document.createElement("div");
+    idCell.className = "elemRow__id elemCell--id";
+    idCell.textContent = String(el.id);
 
-    const id = document.createElement("div");
-    id.className = "element__id";
-    id.textContent = `#${el.id}`;
+    const textCell = document.createElement("div");
+    textCell.className = "elemCell--text";
 
-    const textWrap = document.createElement("div");
-    textWrap.className = "element__text";
+    const textInput = document.createElement("input");
+    textInput.className = "elemInput";
+    textInput.value = el.text;
+    textInput.onchange = () => setElementText(el.id, textInput.value);
+    textInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") textInput.blur(); });
 
-    const input = document.createElement("input");
-    input.className = "input";
-    input.value = el.text;
-    input.onchange = () => setElementText(el.id, input.value);
-    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") input.blur(); });
+    textCell.appendChild(textInput);
 
-    textWrap.appendChild(input);
-
-    const actions = document.createElement("div");
-    actions.className = "element__actions";
-
-    const del = document.createElement("button");
-    del.className = "iconBtn";
-    del.textContent = "Delete";
-    del.onclick = () => deleteElement(el.id);
-
-    actions.appendChild(del);
-    top.append(id, textWrap, actions);
-
-    const tags = document.createElement("div");
-    tags.className = "element__tags";
+    const tagsCell = document.createElement("div");
+    tagsCell.className = "elemRow__tags elemCell--tags";
 
     for (const tagName of state.tags) {
       if (!Object.prototype.hasOwnProperty.call(el.tags, tagName)) continue;
-      tags.appendChild(renderTagChip(el, tagName));
+      tagsCell.appendChild(renderTagChip(el, tagName));
     }
 
     const addChip = document.createElement("span");
@@ -606,10 +593,16 @@ function renderElements() {
     };
 
     addChip.append(addLabel, select);
-    tags.appendChild(addChip);
+    tagsCell.appendChild(addChip);
 
-    card.append(top, tags);
-    container.appendChild(card);
+    const delBtn = document.createElement("button");
+    delBtn.className = "elemRow__del elemCell--del";
+    delBtn.textContent = "×";
+    delBtn.title = `Delete element #${el.id}`;
+    delBtn.onclick = () => deleteElement(el.id);
+
+    row.append(idCell, textCell, tagsCell, delBtn);
+    container.appendChild(row);
   }
 }
 
