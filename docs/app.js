@@ -173,7 +173,7 @@ function ensureTagUi(tag) {
 
 function enableSortKey(key) {
   state.ui.enabledSort = state.ui.enabledSort.filter((k) => k !== key);
-  state.ui.enabledSort.push(key);
+  state.ui.enabledSort.unshift(key);
 }
 
 function disableSortKey(key) {
@@ -281,6 +281,14 @@ function exportState() {
   toast("Exported JSON");
 }
 
+function resetProject() {
+  if (!confirm("Start a new project? This will clear all current data.")) return;
+  state = defaultState();
+  saveState();
+  render();
+  toast("Started a new project");
+}
+
 function handleImportFile(file) {
   const reader = new FileReader();
   reader.onload = () => {
@@ -366,7 +374,10 @@ function deleteTag(name) {
 
   for (const el of state.elements) delete el.tags[name];
 
-  if (state.ui.enabledSort.length === 0) state.ui.enabledSort = ["order"];
+  if (state.ui.enabledSort.length === 0) {
+    state.ui.sort.order = SortTri.ASC;
+    state.ui.enabledSort = ["order"];
+  }
 
   saveState();
   render();
@@ -788,6 +799,7 @@ function render() {
 }
 
 function wireEvents() {
+  $("newProjectBtn").onclick = resetProject;
   $("exportBtn").onclick = exportState;
   $("importFile").addEventListener("change", (ev) => {
     const file = ev.target.files && ev.target.files[0];
