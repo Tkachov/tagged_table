@@ -923,6 +923,7 @@ function renderSortPanel() {
     row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
+    row.tabIndex = 0;
     row.title = "Click the label to toggle asc/desc. Drag to reorder.";
     row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Toggle to change direction. Drag to reorder.`);
 
@@ -952,6 +953,45 @@ function renderSortPanel() {
       saveState();
       render();
     };
+
+    row.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        toggleBtn.click();
+        return;
+      }
+      if (ev.key === "Delete" || ev.key === "Backspace") {
+        ev.preventDefault();
+        removeBtn.click();
+        return;
+      }
+
+      const moveLeft = ev.key === "ArrowLeft" || ev.key === "ArrowUp";
+      const moveRight = ev.key === "ArrowRight" || ev.key === "ArrowDown";
+      if (!moveLeft && !moveRight) return;
+
+      ev.preventDefault();
+      const list = state.ui.enabledSort.slice();
+      const fromIdx = list.indexOf(key);
+      if (fromIdx < 0) return;
+
+      const toIdx = moveLeft ? Math.max(0, fromIdx - 1) : Math.min(list.length - 1, fromIdx + 1);
+      if (toIdx === fromIdx) return;
+
+      list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, key);
+      state.ui.enabledSort = list;
+      saveState();
+      renderSortPanel();
+      renderElements();
+
+      for (const item of enabled.querySelectorAll(".enabledItem")) {
+        if (item.dataset.key === key) {
+          item.focus();
+          break;
+        }
+      }
+    });
 
     row.append(toggleBtn, removeBtn);
     enabled.appendChild(row);
