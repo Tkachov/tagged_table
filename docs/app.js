@@ -966,16 +966,16 @@ function renderSortPanel() {
         return;
       }
 
-      const moveLeft = ev.key === "ArrowLeft" || ev.key === "ArrowUp";
-      const moveRight = ev.key === "ArrowRight" || ev.key === "ArrowDown";
-      if (!moveLeft && !moveRight) return;
+      const movePrevious = ev.key === "ArrowLeft" || ev.key === "ArrowUp";
+      const moveNext = ev.key === "ArrowRight" || ev.key === "ArrowDown";
+      if (!movePrevious && !moveNext) return;
 
       ev.preventDefault();
       const list = state.ui.enabledSort.slice();
       const fromIdx = list.indexOf(key);
       if (fromIdx < 0) return;
 
-      const toIdx = moveLeft ? Math.max(0, fromIdx - 1) : Math.min(list.length - 1, fromIdx + 1);
+      const toIdx = movePrevious ? Math.max(0, fromIdx - 1) : Math.min(list.length - 1, fromIdx + 1);
       if (toIdx === fromIdx) return;
 
       list.splice(fromIdx, 1);
