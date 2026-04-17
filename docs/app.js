@@ -596,13 +596,14 @@ function openTagPopup(elementId, anchorBtn) {
   search.oninput = () => buildList(search.value);
 
   // Position the popup below the anchor button
+  const POPUP_W = 200;
   document.body.appendChild(popup);
   const rect = anchorBtn.getBoundingClientRect();
   const popupH = popup.offsetHeight;
   const spaceBelow = window.innerHeight - rect.bottom;
   const top = spaceBelow >= popupH + 4 ? rect.bottom + 4 : rect.top - popupH - 4;
   let left = rect.left;
-  if (left + 200 > window.innerWidth - 8) left = window.innerWidth - 208;
+  if (left + POPUP_W > window.innerWidth - 8) left = window.innerWidth - POPUP_W - 8;
   popup.style.top = `${top}px`;
   popup.style.left = `${left}px`;
 
