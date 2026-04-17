@@ -28,22 +28,26 @@
     <div class="page">
       <section class="card card--elements">
         <div class="filterRow">
-          <div class="filterRow__label elemCell--id">Filter</div>
+          <div class="filterRow__head elemCell--id">
+            <div class="filterRow__label">Filter</div>
+            <button id="resetFiltersBtn" class="sectionReset" title="Reset filters">×</button>
+          </div>
           <div class="elemCell--text">
             <input id="filterText" class="elemInput filterRow__input" type="text" placeholder="Filter by text…" />
           </div>
           <div id="filterTagPills" class="filterRow__pills elemCell--tags"></div>
-          <button id="resetFiltersBtn" class="sectionReset elemCell--del" title="Reset filters">×</button>
         </div>
 
         <div class="sortRow">
-          <div class="sortRow__label elemCell--id">Sort</div>
+          <div class="sortRow__head elemCell--id">
+            <div class="sortRow__label">Sort</div>
+            <button id="resetSortBtn" class="sectionReset" title="Reset sort">×</button>
+          </div>
           <div class="sortRow__criteria">
             <div id="enabledSort" class="sortRow__enabled"></div>
             <span class="sortSep">|</span>
             <div id="availableSort" class="sortRow__available"></div>
           </div>
-          <button id="resetSortBtn" class="sectionReset elemCell--del" title="Reset sort">×</button>
         </div>
 
         <div class="elemTable__head">

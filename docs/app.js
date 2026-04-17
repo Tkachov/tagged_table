@@ -589,7 +589,9 @@ function openPriorityPopup(elementId, tagName, chipEl) {
     const priority = Math.trunc(n);
     const elem = state.elements.find((e) => e.id === elementId);
     if (!elem) { closePriorityPopup(); return; }
-    if (elem.tags[tagName] === priority) { closePriorityPopup(); return; }
+    if (elem.tags[tagName] === priority) {
+      return;
+    }
 
     ensureTagUi(tagName);
     elem.tags[tagName] = priority;
@@ -613,9 +615,16 @@ function openPriorityPopup(elementId, tagName, chipEl) {
     }
   }
 
+  input.addEventListener("input", applyChange);
   input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); }
-    if (ev.key === "Escape") { closePriorityPopup(); }
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      applyChange();
+      closePriorityPopup();
+    }
+    if (ev.key === "Escape") {
+      closePriorityPopup();
+    }
   });
 
   const outsideClick = (ev) => {
@@ -918,22 +927,81 @@ function renderSortPanel() {
   }
 
   for (const { key, tri } of enabledEntries) {
-    const row = document.createElement("button");
+    const row = document.createElement("div");
     row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
-    row.type = "button";
-    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
-    row.title = "Click: asc → desc → off. Drag to reorder.";
-    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Click to change. Drag to reorder.`);
-    row.onclick = () => {
-      const next = cycleSortTri(currentSortTriForKey(key));
+    row.tabIndex = 0;
+    row.title = "Click the label to toggle asc/desc. Drag to reorder.";
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Toggle to change direction. Drag to reorder.`);
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "enabledItem__toggle";
+    toggleBtn.type = "button";
+    toggleBtn.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
+    toggleBtn.title = "Toggle asc/desc";
+    toggleBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      const current = currentSortTriForKey(key);
+      const next = current === SortTri.ASC ? SortTri.DESC : SortTri.ASC;
       setSortTriForKey(key, next);
-      if (next === SortTri.OFF) disableSortKey(key);
       saveState();
       render();
     };
 
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "enabledItem__remove";
+    removeBtn.type = "button";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Disable sort criterion";
+    removeBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      setSortTriForKey(key, SortTri.OFF);
+      disableSortKey(key);
+      saveState();
+      render();
+    };
+
+    row.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        toggleBtn.click();
+        return;
+      }
+      if (ev.key === "Delete" || ev.key === "Backspace") {
+        ev.preventDefault();
+        removeBtn.click();
+        return;
+      }
+
+      const movePrevious = ev.key === "ArrowLeft" || ev.key === "ArrowUp";
+      const moveNext = ev.key === "ArrowRight" || ev.key === "ArrowDown";
+      if (!movePrevious && !moveNext) return;
+
+      ev.preventDefault();
+      const list = state.ui.enabledSort.slice();
+      const fromIdx = list.indexOf(key);
+      if (fromIdx < 0) return;
+
+      const toIdx = movePrevious ? Math.max(0, fromIdx - 1) : Math.min(list.length - 1, fromIdx + 1);
+      if (toIdx === fromIdx) return;
+
+      list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, key);
+      state.ui.enabledSort = list;
+      saveState();
+      renderSortPanel();
+      renderElements();
+
+      for (const item of enabled.querySelectorAll(".enabledItem")) {
+        if (item.dataset.key === key) {
+          item.focus();
+          break;
+        }
+      }
+    });
+
+    row.append(toggleBtn, removeBtn);
     enabled.appendChild(row);
   }
 
