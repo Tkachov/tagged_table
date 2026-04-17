@@ -12,6 +12,7 @@
   --radius: 10px;
   --radius2: 999px;
   --tag-pill-min-width: 110px;
+  --col-left-pad: 14px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
@@ -89,7 +90,7 @@ body {
 
 /* ── Page container ── */
 .page {
-  width: 80vw;
+  width: 60vw;
   margin: 0 auto;
   padding: 16px 0 40px;
 }
@@ -170,9 +171,9 @@ body {
 }
 
 /* ── Element table ── */
-.elemCell--id   { width: 74px;  flex-shrink: 0; }
-.elemCell--text { width: 240px; flex-shrink: 0; padding: 0 10px; }
-.elemCell--tags { flex: 1; }
+.elemCell--id   { width: 74px;  flex-shrink: 0; padding-left: var(--col-left-pad); }
+.elemCell--text { width: 240px; flex-shrink: 0; padding: 0 10px 0 var(--col-left-pad); }
+.elemCell--tags { flex: 1; padding-left: var(--col-left-pad); }
 .elemCell--del  { width: 32px;  flex-shrink: 0; }
 
 .card {
@@ -208,7 +209,10 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .elemRow:last-child { border-bottom: none; }
-.elemRow:hover { background: #f8fafc; }
+.elemRow:hover,
+.elemRow:focus-within {
+  box-shadow: inset 0 0 0 2px rgba(15, 23, 42, 0.3);
+}
 
 .elemRow__id {
   font-family: var(--mono);
@@ -325,7 +329,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 0;
 }
 
 /* Reset buttons for filter/sort rows — always visible */
@@ -370,7 +374,7 @@ body {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  padding: 2px 10px;
+  padding: 2px var(--col-left-pad);
 }
 
 .sortRow__enabled,
@@ -434,7 +438,7 @@ body {
 .tagPopup__item {
   padding: 7px 10px;
   cursor: pointer;
-  font-family: var(--mono);
+  font-family: var(--sans);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -459,8 +463,9 @@ body {
 .tagChip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 7px 3px 11px;
+  justify-content: center;
+  gap: 6px;
+  padding: 3px 9px;
   border-radius: var(--radius2);
   border: 1px solid rgba(100, 116, 139, 0.7);
   background: transparent;
@@ -471,11 +476,17 @@ body {
   font-size: 13px;
 }
 .tagChip:hover { background: rgba(148, 163, 184, 0.08); }
-.tagChip__name { font-family: var(--mono); color: inherit; font-size: inherit; }
+.tagChip__name {
+  font-family: var(--sans);
+  color: inherit;
+  font-size: inherit;
+  flex: 1;
+  text-align: center;
+}
 .tagChip__remove {
   border: none;
   background: transparent;
-  color: inherit;
+  color: #94a3b8;
   cursor: pointer;
   width: 18px;
   height: 18px;
@@ -539,13 +550,14 @@ body {
   border-radius: 10px;
   padding: 7px;
 }
-.tagRow__name { font-family: var(--mono); font-size: 13px; flex: 1; }
+.tagRow__name { font-family: var(--sans); font-size: 13px; flex: 1; }
 .tagRow__actions { display: flex; gap: 6px; }
 
 /* ── Pills (filter / sort available) ── */
 .pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 3px 9px;
   border-radius: var(--radius2);
@@ -568,7 +580,13 @@ body {
   color: rgba(220, 38, 38, 0.7);
 }
 
-.pill__k { font-family: var(--mono); color: inherit; font-size: inherit; }
+.pill__k {
+  font-family: var(--sans);
+  color: inherit;
+  font-size: inherit;
+  flex: 1;
+  text-align: center;
+}
 
 .enabledItem {
   display: inline-flex;
@@ -583,15 +601,17 @@ body {
   background: transparent;
   color: inherit;
   font: inherit;
-  font-family: var(--mono);
+  font-family: var(--sans);
   cursor: pointer;
   padding: 0;
+  flex: 1;
+  text-align: center;
 }
 
 .enabledItem__remove {
   border: none;
   background: transparent;
-  color: inherit;
+  color: #94a3b8;
   cursor: pointer;
   border-radius: 50%;
   width: 18px;
@@ -602,7 +622,11 @@ body {
   justify-content: center;
   line-height: 1;
   flex-shrink: 0;
+  visibility: hidden;
 }
+
+.enabledItem:hover .enabledItem__remove,
+.enabledItem:focus-within .enabledItem__remove { visibility: visible; }
 
 .enabledItem__remove:hover {
   background: rgba(220, 38, 38, 0.1);

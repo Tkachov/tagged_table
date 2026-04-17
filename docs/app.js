@@ -929,11 +929,19 @@ function renderSortPanel() {
   for (const { key, tri } of enabledEntries) {
     const row = document.createElement("div");
     row.className = `${sortPillClass(tri)} enabledItem`;
-    row.draggable = true;
+    row.draggable = false;
     row.dataset.key = key;
     row.tabIndex = 0;
     row.title = "Click the label to toggle asc/desc. Drag to reorder.";
     row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Toggle to change direction. Drag to reorder.`);
+
+    const toggleSortDirection = () => {
+      const current = currentSortTriForKey(key);
+      const next = current === SortTri.ASC ? SortTri.DESC : SortTri.ASC;
+      setSortTriForKey(key, next);
+      saveState();
+      render();
+    };
 
     const toggleBtn = document.createElement("button");
     toggleBtn.className = "enabledItem__toggle";
@@ -942,11 +950,7 @@ function renderSortPanel() {
     toggleBtn.title = "Toggle asc/desc";
     toggleBtn.onclick = (ev) => {
       ev.stopPropagation();
-      const current = currentSortTriForKey(key);
-      const next = current === SortTri.ASC ? SortTri.DESC : SortTri.ASC;
-      setSortTriForKey(key, next);
-      saveState();
-      render();
+      toggleSortDirection();
     };
 
     const removeBtn = document.createElement("button");
@@ -965,7 +969,7 @@ function renderSortPanel() {
     row.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter" || ev.key === " ") {
         ev.preventDefault();
-        toggleBtn.click();
+        toggleSortDirection();
         return;
       }
       if (ev.key === "Delete" || ev.key === "Backspace") {
@@ -999,6 +1003,59 @@ function renderSortPanel() {
           break;
         }
       }
+    });
+
+    let holdTimer = null;
+    const HOLD_TO_DRAG_MS = 260;
+
+    const clearHoldTimer = () => {
+      if (!holdTimer) return;
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    };
+
+    row.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 0) return;
+      if (removeBtn.contains(ev.target)) return;
+      row.dataset.justDragged = "";
+      clearHoldTimer();
+      holdTimer = setTimeout(() => {
+        row.draggable = true;
+      }, HOLD_TO_DRAG_MS);
+    });
+
+    row.addEventListener("pointerup", () => {
+      clearHoldTimer();
+      if (!row.dataset.dragging) row.draggable = false;
+    });
+
+    row.addEventListener("pointerleave", () => {
+      clearHoldTimer();
+      if (!row.dataset.dragging) row.draggable = false;
+    });
+
+    row.addEventListener("pointercancel", () => {
+      clearHoldTimer();
+      if (!row.dataset.dragging) row.draggable = false;
+    });
+
+    row.addEventListener("dragstart", () => {
+      row.dataset.dragging = "1";
+    });
+
+    row.addEventListener("dragend", () => {
+      row.dataset.dragging = "";
+      row.dataset.justDragged = "1";
+      row.draggable = false;
+      setTimeout(() => {
+        row.dataset.justDragged = "";
+      }, 0);
+    });
+
+    row.addEventListener("click", (ev) => {
+      if (removeBtn.contains(ev.target)) return;
+      if (row.dataset.justDragged === "1") return;
+      toggleSortDirection();
     });
 
     row.append(toggleBtn, removeBtn);
