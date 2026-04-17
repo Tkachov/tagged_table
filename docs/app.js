@@ -615,7 +615,7 @@ function openPriorityPopup(elementId, tagName, chipEl) {
 
   input.addEventListener("input", applyChange);
   input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") { ev.preventDefault(); closePriorityPopup(); }
+    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); closePriorityPopup(); }
     if (ev.key === "Escape") { closePriorityPopup(); }
   });
 
