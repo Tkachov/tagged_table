@@ -8,10 +8,6 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="topbar__left">
-        <h1 class="title">Tagged Table</h1>
-        <div class="subtitle">Create elements, tag them with priorities, filter/sort, and share via JSON.</div>
-      </div>
       <div class="topbar__right">
         <button id="newProjectBtn" class="btn btn--secondary">New project</button>
         <button id="exportBtn" class="btn">Export JSON</button>
@@ -21,15 +17,19 @@
     </header>
 
     <main class="layout">
-      <section class="card">
-        <h2 class="card__title">Elements</h2>
-
-        <div class="row row--gap">
-          <input id="newElementText" class="input" type="text" placeholder="Add a new element and press Enter" />
+      <section class="card card--elements">
+        <div class="elemTable__head">
+          <div class="elemCell--id">#</div>
+          <div class="elemCell--text">Text</div>
+          <div class="elemCell--tags">Tags</div>
+          <div class="elemCell--del"></div>
+        </div>
+        <div id="elements"></div>
+        <div class="elemTable__addRow">
+          <div class="elemCell--id"></div>
+          <input id="newElementText" class="input elemTable__addInput" type="text" placeholder="Add a new element and press Enter" />
           <button id="addElementBtn" class="btn">Add</button>
         </div>
-
-        <div id="elements" class="elements"></div>
       </section>
 
       <aside class="card">
@@ -62,15 +62,8 @@
         </div>
 
         <div class="sortBlock">
-          <div class="sortBlock__available">
-            <div class="sortBlock__label">Available</div>
-            <div id="availableSort" class="pills"></div>
-          </div>
-
-          <div class="sortBlock__enabled">
-            <div class="sortBlock__label">Enabled (drag to reorder)</div>
-            <div id="enabledSort" class="enabledSort"></div>
-          </div>
+          <div id="enabledSort" class="enabledSort"></div>
+          <div id="availableSort" class="pills"></div>
         </div>
       </section>
     </footer>

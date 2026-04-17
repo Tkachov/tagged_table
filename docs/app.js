@@ -162,7 +162,7 @@ function sortKeyKind(key) {
 function getSortKeyLabel(key) {
   if (key === "order") return "order";
   if (key === "text") return "text";
-  if (key.startsWith("tag:")) return `tag:${key.slice(4)}`;
+  if (key.startsWith("tag:")) return key.slice(4);
   return key;
 }
 
@@ -231,8 +231,14 @@ function compareByKey(a, b, key) {
   }
 
   if (kind === "tag") {
-    const pa = a.tags && tag in a.tags ? Number(a.tags[tag]) : 0;
-    const pb = b.tags && tag in b.tags ? Number(b.tags[tag]) : 0;
+    const hasA = a.tags && Object.prototype.hasOwnProperty.call(a.tags, tag);
+    const hasB = b.tags && Object.prototype.hasOwnProperty.call(b.tags, tag);
+    if (hasA && !hasB) return -1;
+    if (!hasA && hasB) return 1;
+    if (!hasA && !hasB) return 0;
+
+    const pa = Number(a.tags[tag]);
+    const pb = Number(b.tags[tag]);
     if (pa < pb) return -1 * dir;
     if (pa > pb) return 1 * dir;
     return 0;
@@ -514,6 +520,102 @@ function renderTagChip(el, tagName) {
   return chip;
 }
 
+let _tagPopup = null;
+
+function closeTagPopup() {
+  if (_tagPopup) {
+    _tagPopup.remove();
+    _tagPopup = null;
+  }
+}
+
+function openTagPopup(elementId, anchorBtn) {
+  closeTagPopup();
+
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return;
+
+  const popup = document.createElement("div");
+  popup.className = "tagPopup";
+  _tagPopup = popup;
+
+  const search = document.createElement("input");
+  search.className = "tagPopup__search";
+  search.type = "text";
+  search.placeholder = "Search…";
+  popup.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "tagPopup__list";
+  popup.appendChild(list);
+
+  function getAvailable(query) {
+    const q = query.trim().toLowerCase();
+    return state.tags.filter(
+      (t) => !Object.prototype.hasOwnProperty.call(el.tags, t) && (q === "" || t.toLowerCase().includes(q))
+    );
+  }
+
+  function selectTag(tagName) {
+    const normalized = normalizeTagName(tagName);
+    if (!isValidTagName(normalized)) { toast("Invalid tag name"); return; }
+    closeTagPopup();
+    setElementTagPriority(elementId, normalized, 1);
+  }
+
+  function buildList(query) {
+    list.innerHTML = "";
+    const available = getAvailable(query);
+    const q = query.trim();
+
+    for (const tagName of available) {
+      const item = document.createElement("div");
+      item.className = "tagPopup__item";
+      item.textContent = tagName;
+      item.onclick = (ev) => { ev.stopPropagation(); selectTag(tagName); };
+      list.appendChild(item);
+    }
+
+    if (q && !state.tags.some((t) => t.toLowerCase() === q.toLowerCase())) {
+      const createItem = document.createElement("div");
+      createItem.className = "tagPopup__item tagPopup__item--create";
+      createItem.textContent = `Create new tag "${q}"`;
+      createItem.onclick = (ev) => { ev.stopPropagation(); selectTag(q); };
+      list.appendChild(createItem);
+    }
+
+    if (list.children.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "tagPopup__empty";
+      empty.textContent = "No tags available";
+      list.appendChild(empty);
+    }
+  }
+
+  buildList("");
+  search.oninput = () => buildList(search.value);
+
+  // Position the popup below the anchor button
+  const POPUP_W = 200;
+  document.body.appendChild(popup);
+  const rect = anchorBtn.getBoundingClientRect();
+  const popupH = popup.offsetHeight;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const top = spaceBelow >= popupH + 4 ? rect.bottom + 4 : rect.top - popupH - 4;
+  let left = rect.left;
+  if (left + POPUP_W > window.innerWidth - 8) left = window.innerWidth - POPUP_W - 8;
+  popup.style.top = `${top}px`;
+  popup.style.left = `${left}px`;
+
+  // Focus search after positioning
+  search.focus();
+
+  // Close on outside click (next tick so this click doesn't immediately close it)
+  setTimeout(() => {
+    document.addEventListener("click", closeTagPopup, { once: true });
+  }, 0);
+}
+
 function renderElements() {
   const container = $("elements");
   container.innerHTML = "";
@@ -522,88 +624,58 @@ function renderElements() {
   if (els.length === 0) {
     const empty = document.createElement("div");
     empty.className = "subtitle";
+    empty.style.padding = "12px";
     empty.textContent = "No elements match the current filter.";
     container.appendChild(empty);
     return;
   }
 
   for (const el of els) {
-    const card = document.createElement("div");
-    card.className = "element";
+    const row = document.createElement("div");
+    row.className = "elemRow";
 
-    const top = document.createElement("div");
-    top.className = "element__top";
+    const idCell = document.createElement("div");
+    idCell.className = "elemRow__id elemCell--id";
+    idCell.textContent = String(el.id);
 
-    const id = document.createElement("div");
-    id.className = "element__id";
-    id.textContent = `#${el.id}`;
+    const textCell = document.createElement("div");
+    textCell.className = "elemCell--text";
 
-    const textWrap = document.createElement("div");
-    textWrap.className = "element__text";
+    const textInput = document.createElement("input");
+    textInput.className = "elemInput";
+    textInput.value = el.text;
+    textInput.onchange = () => setElementText(el.id, textInput.value);
+    textInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") textInput.blur(); });
 
-    const input = document.createElement("input");
-    input.className = "input";
-    input.value = el.text;
-    input.onchange = () => setElementText(el.id, input.value);
-    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") input.blur(); });
+    textCell.appendChild(textInput);
 
-    textWrap.appendChild(input);
-
-    const actions = document.createElement("div");
-    actions.className = "element__actions";
-
-    const del = document.createElement("button");
-    del.className = "iconBtn";
-    del.textContent = "Delete";
-    del.onclick = () => deleteElement(el.id);
-
-    actions.appendChild(del);
-    top.append(id, textWrap, actions);
-
-    const tags = document.createElement("div");
-    tags.className = "element__tags";
+    const tagsCell = document.createElement("div");
+    tagsCell.className = "elemRow__tags elemCell--tags";
 
     for (const tagName of state.tags) {
       if (!Object.prototype.hasOwnProperty.call(el.tags, tagName)) continue;
-      tags.appendChild(renderTagChip(el, tagName));
+      tagsCell.appendChild(renderTagChip(el, tagName));
     }
 
-    const addChip = document.createElement("span");
-    addChip.className = "tagChip";
-    const addLabel = document.createElement("span");
-    addLabel.className = "tagChip__name";
-    addLabel.textContent = "Add tag";
-
-    const select = document.createElement("select");
-    select.className = "input";
-    select.style.padding = "6px 10px";
-    select.style.width = "160px";
-
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = "Choose…";
-    select.appendChild(opt0);
-
-    for (const tagName of state.tags) {
-      if (Object.prototype.hasOwnProperty.call(el.tags, tagName)) continue;
-      const opt = document.createElement("option");
-      opt.value = tagName;
-      opt.textContent = tagName;
-      select.appendChild(opt);
-    }
-
-    select.onchange = () => {
-      const t = select.value;
-      if (!t) return;
-      setElementTagPriority(el.id, t, 1);
-      select.value = "";
+    const addTagBtn = document.createElement("button");
+    addTagBtn.className = "elemRow__addTag";
+    addTagBtn.textContent = "+";
+    addTagBtn.title = "Add tag";
+    addTagBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      openTagPopup(el.id, addTagBtn);
     };
 
-    addChip.append(addLabel, select);
-    tags.appendChild(addChip);
+    tagsCell.appendChild(addTagBtn);
 
-    card.append(top, tags);
-    container.appendChild(card);
+    const delBtn = document.createElement("button");
+    delBtn.className = "elemRow__del elemCell--del";
+    delBtn.textContent = "×";
+    delBtn.title = `Delete element #${el.id}`;
+    delBtn.onclick = () => deleteElement(el.id);
+
+    row.append(idCell, textCell, tagsCell, delBtn);
+    container.appendChild(row);
   }
 }
 
@@ -717,18 +789,21 @@ function renderSortPanel() {
   available.innerHTML = "";
   enabled.innerHTML = "";
 
-  const availKeys = ["order", "text", ...state.tags.map((t) => `tag:${t}`)];
+  const allKeys = ["order", "text", ...state.tags.map((t) => `tag:${t}`)];
+  const enabledEntries = state.ui.enabledSort
+    .slice()
+    .map((key) => ({ key, tri: currentSortTriForKey(key) }))
+    .filter((entry) => entry.tri !== SortTri.OFF);
+  const enabledSet = new Set(enabledEntries.map((entry) => entry.key));
+  const availKeys = allKeys.filter((k) => !enabledSet.has(k));
 
   for (const key of availKeys) {
-    const tri = currentSortTriForKey(key);
     const pill = document.createElement("button");
-    pill.className = sortPillClass(tri);
-    pill.title = "Sort: off → asc → desc";
+    pill.className = sortPillClass(SortTri.OFF);
+    pill.title = "Enable sort (asc)";
     pill.onclick = () => {
-      const next = cycleSortTri(tri);
-      setSortTriForKey(key, next);
-      if (next === SortTri.OFF) disableSortKey(key);
-      else enableSortKey(key);
+      setSortTriForKey(key, SortTri.ASC);
+      enableSortKey(key);
       saveState();
       render();
     };
@@ -740,9 +815,7 @@ function renderSortPanel() {
     available.appendChild(pill);
   }
 
-  const enabledKeys = state.ui.enabledSort.slice().filter((k) => currentSortTriForKey(k) !== SortTri.OFF);
-
-  if (enabledKeys.length === 0) {
+  if (enabledEntries.length === 0) {
     const empty = document.createElement("div");
     empty.className = "subtitle";
     empty.textContent = "No active sort criteria.";
@@ -750,40 +823,23 @@ function renderSortPanel() {
     return;
   }
 
-  for (const key of enabledKeys) {
-    const row = document.createElement("div");
-    row.className = "enabledItem";
+  for (const { key, tri } of enabledEntries) {
+    const row = document.createElement("button");
+    row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
-
-    const left = document.createElement("div");
-    left.className = "enabledItem__left";
-
-    const grip = document.createElement("div");
-    grip.className = "grip";
-    grip.title = "Drag to reorder";
-
-    const label = document.createElement("div");
-    label.className = "tagRow__name";
-    label.textContent = getSortKeyLabel(key);
-
-    left.append(grip, label);
-
-    const tri = currentSortTriForKey(key);
-    const toggle = document.createElement("button");
-    toggle.className = sortPillClass(tri);
-    toggle.textContent = tri === SortTri.ASC ? "asc" : tri === SortTri.DESC ? "desc" : "off";
-    toggle.title = "Toggle asc/desc/off";
-    toggle.onclick = () => {
+    row.type = "button";
+    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "asc" : "desc"}`;
+    row.title = "Click: asc → desc → off. Drag to reorder.";
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "asc" : "desc"}. Click to change. Drag to reorder.`);
+    row.onclick = () => {
       const next = cycleSortTri(currentSortTriForKey(key));
       setSortTriForKey(key, next);
       if (next === SortTri.OFF) disableSortKey(key);
-      else enableSortKey(key);
       saveState();
       render();
     };
 
-    row.append(left, toggle);
     enabled.appendChild(row);
   }
 
