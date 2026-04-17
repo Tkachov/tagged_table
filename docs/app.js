@@ -162,7 +162,7 @@ function sortKeyKind(key) {
 function getSortKeyLabel(key) {
   if (key === "order") return "order";
   if (key === "text") return "text";
-  if (key.startsWith("tag:")) return `tag:${key.slice(4)}`;
+  if (key.startsWith("tag:")) return key.slice(4);
   return key;
 }
 
@@ -231,8 +231,14 @@ function compareByKey(a, b, key) {
   }
 
   if (kind === "tag") {
-    const pa = a.tags && tag in a.tags ? Number(a.tags[tag]) : 0;
-    const pb = b.tags && tag in b.tags ? Number(b.tags[tag]) : 0;
+    const hasA = !!(a.tags && Object.prototype.hasOwnProperty.call(a.tags, tag));
+    const hasB = !!(b.tags && Object.prototype.hasOwnProperty.call(b.tags, tag));
+    if (hasA && !hasB) return -1;
+    if (!hasA && hasB) return 1;
+    if (!hasA && !hasB) return 0;
+
+    const pa = Number(a.tags[tag]);
+    const pb = Number(b.tags[tag]);
     if (pa < pb) return -1 * dir;
     if (pa > pb) return 1 * dir;
     return 0;
@@ -717,18 +723,18 @@ function renderSortPanel() {
   available.innerHTML = "";
   enabled.innerHTML = "";
 
-  const availKeys = ["order", "text", ...state.tags.map((t) => `tag:${t}`)];
+  const allKeys = ["order", "text", ...state.tags.map((t) => `tag:${t}`)];
+  const enabledKeys = state.ui.enabledSort.slice().filter((k) => currentSortTriForKey(k) !== SortTri.OFF);
+  const enabledSet = new Set(enabledKeys);
+  const availKeys = allKeys.filter((k) => !enabledSet.has(k));
 
   for (const key of availKeys) {
-    const tri = currentSortTriForKey(key);
     const pill = document.createElement("button");
-    pill.className = sortPillClass(tri);
-    pill.title = "Sort: off → asc → desc";
+    pill.className = sortPillClass(SortTri.OFF);
+    pill.title = "Enable sort (asc)";
     pill.onclick = () => {
-      const next = cycleSortTri(tri);
-      setSortTriForKey(key, next);
-      if (next === SortTri.OFF) disableSortKey(key);
-      else enableSortKey(key);
+      setSortTriForKey(key, SortTri.ASC);
+      enableSortKey(key);
       saveState();
       render();
     };
@@ -740,8 +746,6 @@ function renderSortPanel() {
     available.appendChild(pill);
   }
 
-  const enabledKeys = state.ui.enabledSort.slice().filter((k) => currentSortTriForKey(k) !== SortTri.OFF);
-
   if (enabledKeys.length === 0) {
     const empty = document.createElement("div");
     empty.className = "subtitle";
@@ -751,39 +755,23 @@ function renderSortPanel() {
   }
 
   for (const key of enabledKeys) {
-    const row = document.createElement("div");
-    row.className = "enabledItem";
+    const tri = currentSortTriForKey(key);
+    const row = document.createElement("button");
+    row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
-
-    const left = document.createElement("div");
-    left.className = "enabledItem__left";
-
-    const grip = document.createElement("div");
-    grip.className = "grip";
-    grip.title = "Drag to reorder";
-
-    const label = document.createElement("div");
-    label.className = "tagRow__name";
-    label.textContent = getSortKeyLabel(key);
-
-    left.append(grip, label);
-
-    const tri = currentSortTriForKey(key);
-    const toggle = document.createElement("button");
-    toggle.className = sortPillClass(tri);
-    toggle.textContent = tri === SortTri.ASC ? "asc" : tri === SortTri.DESC ? "desc" : "off";
-    toggle.title = "Toggle asc/desc/off";
-    toggle.onclick = () => {
-      const next = cycleSortTri(currentSortTriForKey(key));
+    row.type = "button";
+    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "asc" : "desc"}`;
+    row.title = "Click: asc → desc → off. Drag to reorder.";
+    row.onclick = () => {
+      const current = currentSortTriForKey(key);
+      const next = current === SortTri.ASC ? SortTri.DESC : current === SortTri.DESC ? SortTri.OFF : SortTri.ASC;
       setSortTriForKey(key, next);
       if (next === SortTri.OFF) disableSortKey(key);
-      else enableSortKey(key);
       saveState();
       render();
     };
 
-    row.append(left, toggle);
     enabled.appendChild(row);
   }
 
