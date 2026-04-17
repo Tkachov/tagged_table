@@ -12,6 +12,7 @@
   --radius: 10px;
   --radius2: 999px;
   --tag-pill-min-width: 110px;
+  --tag-remove-space: 29px;
   --col-left-pad: 14px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
@@ -464,7 +465,7 @@ body {
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  padding: 3px 29px;
+  padding: 3px var(--tag-remove-space);
   border-radius: var(--radius2);
   border: 1px solid rgba(100, 116, 139, 0.7);
   background: transparent;
@@ -596,8 +597,8 @@ body {
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  padding-left: 29px;
-  padding-right: 29px;
+  padding-left: var(--tag-remove-space);
+  padding-right: var(--tag-remove-space);
   position: relative;
 }
 
