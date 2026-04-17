@@ -498,25 +498,27 @@ function renderTagsPanel() {
 function renderTagChip(el, tagName) {
   const chip = document.createElement("span");
   chip.className = "tagChip";
+  chip.dataset.elementId = el.id;
+  chip.dataset.tagName = tagName;
+  chip.title = "Click to edit priority";
 
-  const name = document.createElement("span");
-  name.className = "tagChip__name";
-  name.textContent = tagName;
-
-  const input = document.createElement("input");
-  input.type = "number";
-  input.step = "1";
-  input.value = String(el.tags[tagName] ?? 0);
-  input.title = "Priority";
-  input.addEventListener("change", () => setElementTagPriority(el.id, tagName, input.value));
+  const label = document.createElement("span");
+  label.className = "tagChip__name";
+  label.textContent = `${tagName}:${el.tags[tagName] ?? 0}`;
 
   const rm = document.createElement("button");
   rm.className = "tagChip__remove";
   rm.textContent = "×";
   rm.title = "Remove tag from element";
-  rm.onclick = () => removeElementTag(el.id, tagName);
+  rm.onclick = (ev) => { ev.stopPropagation(); removeElementTag(el.id, tagName); };
 
-  chip.append(name, input, rm);
+  chip.append(label, rm);
+
+  chip.addEventListener("click", (ev) => {
+    if (rm.contains(ev.target)) return;
+    openPriorityPopup(el.id, tagName, chip);
+  });
+
   return chip;
 }
 
@@ -529,8 +531,107 @@ function closeTagPopup() {
   }
 }
 
+let _priorityPopup = null;
+
+function closePriorityPopup() {
+  if (_priorityPopup) {
+    if (_priorityPopup._outsideClick) {
+      document.removeEventListener("click", _priorityPopup._outsideClick);
+    }
+    _priorityPopup.remove();
+    _priorityPopup = null;
+  }
+}
+
+function openPriorityPopup(elementId, tagName, chipEl) {
+  closePriorityPopup();
+  closeTagPopup();
+
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return;
+
+  const popup = document.createElement("div");
+  popup.className = "priorityPopup";
+  _priorityPopup = popup;
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "priorityPopup__label";
+  labelEl.textContent = "Priority:";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.step = "1";
+  input.value = String(el.tags[tagName] ?? 0);
+  input.className = "priorityPopup__input";
+
+  popup.append(labelEl, input);
+  document.body.appendChild(popup);
+
+  function positionPopup(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const popupH = popup.offsetHeight;
+    const popupW = popup.offsetWidth;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= popupH + 4 ? rect.bottom + 4 : rect.top - popupH - 4;
+    let left = rect.left;
+    if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
+    popup.style.top = `${top}px`;
+    popup.style.left = `${left}px`;
+  }
+
+  positionPopup(chipEl);
+  input.focus();
+  input.select();
+
+  function applyChange() {
+    const n = Number(input.value);
+    if (!Number.isFinite(n)) return;
+    const priority = Math.trunc(n);
+    const elem = state.elements.find((e) => e.id === elementId);
+    if (!elem) { closePriorityPopup(); return; }
+    if (elem.tags[tagName] === priority) { closePriorityPopup(); return; }
+
+    ensureTagUi(tagName);
+    elem.tags[tagName] = priority;
+    saveState();
+    render();
+
+    let newChip = null;
+    for (const c of document.querySelectorAll(".tagChip")) {
+      if (Number(c.dataset.elementId) === elementId && c.dataset.tagName === tagName) {
+        newChip = c;
+        break;
+      }
+    }
+
+    if (newChip) {
+      const row = newChip.closest(".elemRow");
+      if (row) row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      positionPopup(newChip);
+    } else {
+      closePriorityPopup();
+    }
+  }
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); }
+    if (ev.key === "Escape") { closePriorityPopup(); }
+  });
+
+  const outsideClick = (ev) => {
+    if (popup.contains(ev.target)) return;
+    closePriorityPopup();
+  };
+  popup._outsideClick = outsideClick;
+
+  setTimeout(() => {
+    document.addEventListener("click", outsideClick);
+  }, 0);
+}
+
 function openTagPopup(elementId, anchorBtn) {
   closeTagPopup();
+  closePriorityPopup();
 
   const el = state.elements.find((e) => e.id === elementId);
   if (!el) return;
@@ -633,6 +734,7 @@ function renderElements() {
   for (const el of els) {
     const row = document.createElement("div");
     row.className = "elemRow";
+    row.dataset.elementId = el.id;
 
     const idCell = document.createElement("div");
     idCell.className = "elemRow__id elemCell--id";
@@ -815,23 +917,15 @@ function renderSortPanel() {
     available.appendChild(pill);
   }
 
-  if (enabledEntries.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "subtitle";
-    empty.textContent = "No active sort criteria.";
-    enabled.appendChild(empty);
-    return;
-  }
-
   for (const { key, tri } of enabledEntries) {
     const row = document.createElement("button");
     row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
     row.type = "button";
-    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "asc" : "desc"}`;
+    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
     row.title = "Click: asc → desc → off. Drag to reorder.";
-    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "asc" : "desc"}. Click to change. Drag to reorder.`);
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Click to change. Drag to reorder.`);
     row.onclick = () => {
       const next = cycleSortTri(currentSortTriForKey(key));
       setSortTriForKey(key, next);
@@ -846,6 +940,22 @@ function renderSortPanel() {
   wireEnabledSortDnD();
 }
 
+function closeAllMenus() {
+  for (const m of document.querySelectorAll(".menu.menu--open")) {
+    m.classList.remove("menu--open");
+  }
+}
+
+function openTagsModal() {
+  $("tagsModal").removeAttribute("hidden");
+  renderTagsPanel();
+  $("newTagName").focus();
+}
+
+function closeTagsModal() {
+  $("tagsModal").setAttribute("hidden", "");
+}
+
 function render() {
   for (const t of state.tags) ensureTagUi(t);
   renderTagsPanel();
@@ -855,15 +965,23 @@ function render() {
 }
 
 function wireEvents() {
-  $("newProjectBtn").onclick = resetProject;
-  $("exportBtn").onclick = exportState;
+  // File menu
+  $("menuNewProject").onclick = () => { closeAllMenus(); resetProject(); };
+  $("menuExport").onclick = () => { closeAllMenus(); exportState(); };
   $("importFile").addEventListener("change", (ev) => {
     const file = ev.target.files && ev.target.files[0];
     if (!file) return;
+    closeAllMenus();
     handleImportFile(file);
     ev.target.value = "";
   });
 
+  // Edit > Tags modal
+  $("menuTags").onclick = () => { closeAllMenus(); openTagsModal(); };
+  $("tagsModalClose").onclick = closeTagsModal;
+  $("tagsModalBackdrop").onclick = closeTagsModal;
+
+  // Add element
   const newElement = $("newElementText");
   $("addElementBtn").onclick = () => {
     addElement(newElement.value);
@@ -874,6 +992,7 @@ function wireEvents() {
     if (ev.key === "Enter") $("addElementBtn").click();
   });
 
+  // Add tag (inside modal)
   const newTag = $("newTagName");
   $("addTagBtn").onclick = () => {
     addTag(newTag.value);
@@ -884,6 +1003,7 @@ function wireEvents() {
     if (ev.key === "Enter") $("addTagBtn").click();
   });
 
+  // Filter reset
   $("resetFiltersBtn").onclick = () => {
     state.ui.filterText = "";
     state.ui.filterTags = {};
@@ -893,6 +1013,7 @@ function wireEvents() {
     toast("Filters reset");
   };
 
+  // Sort reset
   $("resetSortBtn").onclick = () => {
     state.ui.sort.order = SortTri.ASC;
     state.ui.sort.text = SortTri.OFF;
@@ -903,6 +1024,26 @@ function wireEvents() {
     render();
     toast("Sort reset");
   };
+
+  // Menu open/close (click trigger toggles; outside click closes all)
+  for (const trigger of document.querySelectorAll(".menu__trigger")) {
+    trigger.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const menu = trigger.closest(".menu");
+      const wasOpen = menu.classList.contains("menu--open");
+      closeAllMenus();
+      if (!wasOpen) menu.classList.add("menu--open");
+    });
+  }
+  document.addEventListener("click", closeAllMenus);
+
+  // Escape closes modal and menus
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      closeTagsModal();
+      closeAllMenus();
+    }
+  });
 }
 
 wireEvents();
