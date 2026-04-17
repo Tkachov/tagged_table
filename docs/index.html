@@ -7,17 +7,45 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="topbar__right">
-        <button id="newProjectBtn" class="btn btn--secondary">New project</button>
-        <button id="exportBtn" class="btn">Export JSON</button>
-        <label class="btn btn--secondary" for="importFile">Import JSON</label>
-        <input id="importFile" type="file" accept="application/json,.json" hidden />
+    <nav class="menubar">
+      <div class="menu" id="menuFile">
+        <button class="menu__trigger" type="button">File</button>
+        <div class="menu__dropdown">
+          <button class="menu__item" id="menuNewProject" type="button">New</button>
+          <button class="menu__item" id="menuExport" type="button">Save</button>
+          <label class="menu__item" for="importFile">Load</label>
+        </div>
       </div>
-    </header>
+      <div class="menu" id="menuEdit">
+        <button class="menu__trigger" type="button">Edit</button>
+        <div class="menu__dropdown">
+          <button class="menu__item" id="menuTags" type="button">Tags</button>
+        </div>
+      </div>
+      <input id="importFile" type="file" accept="application/json,.json" hidden />
+    </nav>
 
-    <main class="layout">
+    <div class="page">
       <section class="card card--elements">
+        <div class="filterRow">
+          <div class="filterRow__label elemCell--id">Filter</div>
+          <div class="elemCell--text">
+            <input id="filterText" class="elemInput filterRow__input" type="text" placeholder="Filter by text…" />
+          </div>
+          <div id="filterTagPills" class="filterRow__pills elemCell--tags"></div>
+          <button id="resetFiltersBtn" class="sectionReset elemCell--del" title="Reset filters">×</button>
+        </div>
+
+        <div class="sortRow">
+          <div class="sortRow__label elemCell--id">Sort</div>
+          <div class="sortRow__criteria">
+            <div id="enabledSort" class="sortRow__enabled"></div>
+            <span class="sortSep">|</span>
+            <div id="availableSort" class="sortRow__available"></div>
+          </div>
+          <button id="resetSortBtn" class="sectionReset elemCell--del" title="Reset sort">×</button>
+        </div>
+
         <div class="elemTable__head">
           <div class="elemCell--id">#</div>
           <div class="elemCell--text">Text</div>
@@ -31,42 +59,25 @@
           <button id="addElementBtn" class="btn">Add</button>
         </div>
       </section>
+    </div>
 
-      <aside class="card">
-        <h2 class="card__title">Tags</h2>
-
-        <div class="row row--gap">
-          <input id="newTagName" class="input" type="text" placeholder="New tag name" />
-          <button id="addTagBtn" class="btn">Add tag</button>
+    <!-- Tags modal (Edit > Tags) -->
+    <div id="tagsModal" class="modal" hidden>
+      <div class="modal__backdrop" id="tagsModalBackdrop"></div>
+      <div class="modal__box">
+        <div class="modal__header">
+          <h2 class="modal__title">Tags</h2>
+          <button id="tagsModalClose" class="modal__close" type="button">×</button>
         </div>
-
-        <div id="tagList" class="taglist"></div>
-      </aside>
-    </main>
-
-    <footer class="bottomPanel">
-      <section class="bottomPanel__section">
-        <div class="bottomPanel__header">
-          <h3>Filter</h3>
-          <button id="resetFiltersBtn" class="btn btn--link">Reset</button>
+        <div class="modal__body">
+          <div class="row row--gap">
+            <input id="newTagName" class="input" type="text" placeholder="New tag name" />
+            <button id="addTagBtn" class="btn" type="button">Add tag</button>
+          </div>
+          <div id="tagList" class="taglist"></div>
         </div>
-
-        <input id="filterText" class="input" type="text" placeholder="Filter by element text" />
-        <div id="filterTagPills" class="pills"></div>
-      </section>
-
-      <section class="bottomPanel__section">
-        <div class="bottomPanel__header">
-          <h3>Sort</h3>
-          <button id="resetSortBtn" class="btn btn--link">Reset</button>
-        </div>
-
-        <div class="sortBlock">
-          <div id="enabledSort" class="enabledSort"></div>
-          <div id="availableSort" class="pills"></div>
-        </div>
-      </section>
-    </footer>
+      </div>
+    </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
 
