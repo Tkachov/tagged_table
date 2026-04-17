@@ -231,8 +231,8 @@ function compareByKey(a, b, key) {
   }
 
   if (kind === "tag") {
-    const hasA = !!(a.tags && Object.prototype.hasOwnProperty.call(a.tags, tag));
-    const hasB = !!(b.tags && Object.prototype.hasOwnProperty.call(b.tags, tag));
+    const hasA = a.tags && Object.prototype.hasOwnProperty.call(a.tags, tag);
+    const hasB = b.tags && Object.prototype.hasOwnProperty.call(b.tags, tag);
     if (hasA && !hasB) return -1;
     if (!hasA && hasB) return 1;
     if (!hasA && !hasB) return 0;
@@ -724,8 +724,11 @@ function renderSortPanel() {
   enabled.innerHTML = "";
 
   const allKeys = ["order", "text", ...state.tags.map((t) => `tag:${t}`)];
-  const enabledKeys = state.ui.enabledSort.slice().filter((k) => currentSortTriForKey(k) !== SortTri.OFF);
-  const enabledSet = new Set(enabledKeys);
+  const enabledEntries = state.ui.enabledSort
+    .slice()
+    .map((key) => ({ key, tri: currentSortTriForKey(key) }))
+    .filter((entry) => entry.tri !== SortTri.OFF);
+  const enabledSet = new Set(enabledEntries.map((entry) => entry.key));
   const availKeys = allKeys.filter((k) => !enabledSet.has(k));
 
   for (const key of availKeys) {
@@ -746,7 +749,7 @@ function renderSortPanel() {
     available.appendChild(pill);
   }
 
-  if (enabledKeys.length === 0) {
+  if (enabledEntries.length === 0) {
     const empty = document.createElement("div");
     empty.className = "subtitle";
     empty.textContent = "No active sort criteria.";
@@ -754,8 +757,7 @@ function renderSortPanel() {
     return;
   }
 
-  for (const key of enabledKeys) {
-    const tri = currentSortTriForKey(key);
+  for (const { key, tri } of enabledEntries) {
     const row = document.createElement("button");
     row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
@@ -763,6 +765,7 @@ function renderSortPanel() {
     row.type = "button";
     row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "asc" : "desc"}`;
     row.title = "Click: asc → desc → off. Drag to reorder.";
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Click to change. Drag to reorder.`);
     row.onclick = () => {
       const current = currentSortTriForKey(key);
       const next = current === SortTri.ASC ? SortTri.DESC : current === SortTri.DESC ? SortTri.OFF : SortTri.ASC;
