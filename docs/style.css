@@ -225,7 +225,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  padding: 4px 0;
+  padding: 4px 0 4px var(--col-left-pad);
 }
 
 .elemInput {
@@ -329,7 +329,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  padding: 2px 0;
+  padding: 2px 0 2px var(--col-left-pad);
 }
 
 /* Reset buttons for filter/sort rows — always visible */
@@ -462,10 +462,9 @@ body {
 /* ── Tag chips (on element rows) ── */
 .tagChip {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 6px;
-  padding: 3px 9px;
+  padding: 3px 29px;
   border-radius: var(--radius2);
   border: 1px solid rgba(100, 116, 139, 0.7);
   background: transparent;
@@ -473,14 +472,15 @@ body {
   cursor: pointer;
   user-select: none;
   min-width: var(--tag-pill-min-width);
-  font-size: 13px;
+  font-size: inherit;
+  line-height: 1.2;
+  position: relative;
 }
 .tagChip:hover { background: rgba(148, 163, 184, 0.08); }
 .tagChip__name {
   font-family: var(--sans);
   color: inherit;
   font-size: inherit;
-  flex: 1;
   text-align: center;
 }
 .tagChip__remove {
@@ -498,6 +498,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .tagChip:hover .tagChip__remove { visibility: visible; }
 .tagChip__remove:hover { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
@@ -556,9 +560,8 @@ body {
 /* ── Pills (filter / sort available) ── */
 .pill {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 6px;
   padding: 3px 9px;
   border-radius: var(--radius2);
   border: 1px solid rgba(100, 116, 139, 0.7);
@@ -567,7 +570,8 @@ body {
   cursor: pointer;
   user-select: none;
   min-width: var(--tag-pill-min-width);
-  font-size: 13px;
+  font-size: inherit;
+  line-height: 1.2;
 }
 .pill:hover { background: rgba(148, 163, 184, 0.08); }
 
@@ -590,10 +594,11 @@ body {
 
 .enabledItem {
   display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding-right: 5px;
+  align-items: baseline;
+  justify-content: center;
+  padding-left: 29px;
+  padding-right: 29px;
+  position: relative;
 }
 
 .enabledItem__toggle {
@@ -604,7 +609,6 @@ body {
   font-family: var(--sans);
   cursor: pointer;
   padding: 0;
-  flex: 1;
   text-align: center;
 }
 
@@ -623,6 +627,10 @@ body {
   line-height: 1;
   flex-shrink: 0;
   visibility: hidden;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .enabledItem:hover .enabledItem__remove,

@@ -929,7 +929,7 @@ function renderSortPanel() {
   for (const { key, tri } of enabledEntries) {
     const row = document.createElement("div");
     row.className = `${sortPillClass(tri)} enabledItem`;
-    row.draggable = false;
+    row.draggable = true;
     row.dataset.key = key;
     row.tabIndex = 0;
     row.title = "Click the label to toggle asc/desc. Drag to reorder.";
@@ -946,6 +946,7 @@ function renderSortPanel() {
     const toggleBtn = document.createElement("button");
     toggleBtn.className = "enabledItem__toggle";
     toggleBtn.type = "button";
+    toggleBtn.draggable = false;
     toggleBtn.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
     toggleBtn.title = "Toggle asc/desc";
     toggleBtn.onclick = (ev) => {
@@ -956,6 +957,7 @@ function renderSortPanel() {
     const removeBtn = document.createElement("button");
     removeBtn.className = "enabledItem__remove";
     removeBtn.type = "button";
+    removeBtn.draggable = false;
     removeBtn.textContent = "×";
     removeBtn.title = "Disable sort criterion";
     removeBtn.onclick = (ev) => {
@@ -1005,39 +1007,7 @@ function renderSortPanel() {
       }
     });
 
-    let holdTimer = null;
     let suppressClickUntil = 0;
-    const HOLD_TO_DRAG_MS = 260;
-
-    const clearHoldTimer = () => {
-      if (!holdTimer) return;
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    };
-
-    row.addEventListener("pointerdown", (ev) => {
-      if (ev.button !== 0) return;
-      if (removeBtn.contains(ev.target)) return;
-      clearHoldTimer();
-      holdTimer = setTimeout(() => {
-        row.draggable = true;
-      }, HOLD_TO_DRAG_MS);
-    });
-
-    row.addEventListener("pointerup", () => {
-      clearHoldTimer();
-      if (!row.dataset.dragging) row.draggable = false;
-    });
-
-    row.addEventListener("pointerleave", () => {
-      clearHoldTimer();
-      if (!row.dataset.dragging) row.draggable = false;
-    });
-
-    row.addEventListener("pointercancel", () => {
-      clearHoldTimer();
-      if (!row.dataset.dragging) row.draggable = false;
-    });
 
     row.addEventListener("dragstart", () => {
       row.dataset.dragging = "1";
@@ -1046,7 +1016,6 @@ function renderSortPanel() {
     row.addEventListener("dragend", () => {
       row.dataset.dragging = "";
       suppressClickUntil = performance.now() + 250;
-      row.draggable = false;
     });
 
     row.addEventListener("click", (ev) => {
