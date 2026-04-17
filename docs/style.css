@@ -307,17 +307,11 @@ body {
   background: #f8fafc;
   color: #334155;
   font-size: 12px;
+  cursor: pointer;
+  user-select: none;
 }
+.tagChip:hover { background: #f1f5f9; border-color: rgba(148,163,184,0.55); }
 .tagChip__name { font-family: var(--mono); }
-.tagChip input {
-  width: 72px;
-  background: #fff;
-  border: 1px solid rgba(148,163,184,0.25);
-  border-radius: 9px;
-  color: var(--text);
-  padding: 4px 6px;
-  outline: none;
-}
 .tagChip__remove {
   border: none;
   background: transparent;
@@ -325,8 +319,41 @@ body {
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 6px;
+  visibility: hidden;
 }
+.tagChip:hover .tagChip__remove { visibility: visible; }
 .tagChip__remove:hover { background: rgba(37,99,235,0.12); }
+
+.priorityPopup {
+  position: fixed;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(15,23,42,0.12);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.priorityPopup__input {
+  width: 60px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+}
+.priorityPopup__input:focus {
+  border-color: rgba(37,99,235,0.5);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+}
 
 .taglist {
   margin-top: 10px;

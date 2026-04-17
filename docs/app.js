@@ -498,25 +498,27 @@ function renderTagsPanel() {
 function renderTagChip(el, tagName) {
   const chip = document.createElement("span");
   chip.className = "tagChip";
+  chip.dataset.elementId = el.id;
+  chip.dataset.tagName = tagName;
+  chip.title = "Click to edit priority";
 
-  const name = document.createElement("span");
-  name.className = "tagChip__name";
-  name.textContent = tagName;
-
-  const input = document.createElement("input");
-  input.type = "number";
-  input.step = "1";
-  input.value = String(el.tags[tagName] ?? 0);
-  input.title = "Priority";
-  input.addEventListener("change", () => setElementTagPriority(el.id, tagName, input.value));
+  const label = document.createElement("span");
+  label.className = "tagChip__name";
+  label.textContent = `${tagName}:${el.tags[tagName] ?? 0}`;
 
   const rm = document.createElement("button");
   rm.className = "tagChip__remove";
   rm.textContent = "×";
   rm.title = "Remove tag from element";
-  rm.onclick = () => removeElementTag(el.id, tagName);
+  rm.onclick = (ev) => { ev.stopPropagation(); removeElementTag(el.id, tagName); };
 
-  chip.append(name, input, rm);
+  chip.append(label, rm);
+
+  chip.addEventListener("click", (ev) => {
+    if (rm.contains(ev.target)) return;
+    openPriorityPopup(el.id, tagName, chip);
+  });
+
   return chip;
 }
 
@@ -529,8 +531,107 @@ function closeTagPopup() {
   }
 }
 
+let _priorityPopup = null;
+
+function closePriorityPopup() {
+  if (_priorityPopup) {
+    if (_priorityPopup._outsideClick) {
+      document.removeEventListener("click", _priorityPopup._outsideClick);
+    }
+    _priorityPopup.remove();
+    _priorityPopup = null;
+  }
+}
+
+function openPriorityPopup(elementId, tagName, chipEl) {
+  closePriorityPopup();
+  closeTagPopup();
+
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return;
+
+  const popup = document.createElement("div");
+  popup.className = "priorityPopup";
+  _priorityPopup = popup;
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "priorityPopup__label";
+  labelEl.textContent = "Priority:";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.step = "1";
+  input.value = String(el.tags[tagName] ?? 0);
+  input.className = "priorityPopup__input";
+
+  popup.append(labelEl, input);
+  document.body.appendChild(popup);
+
+  function positionPopup(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const popupH = popup.offsetHeight;
+    const popupW = popup.offsetWidth;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= popupH + 4 ? rect.bottom + 4 : rect.top - popupH - 4;
+    let left = rect.left;
+    if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
+    popup.style.top = `${top}px`;
+    popup.style.left = `${left}px`;
+  }
+
+  positionPopup(chipEl);
+  input.focus();
+  input.select();
+
+  function applyChange() {
+    const n = Number(input.value);
+    if (!Number.isFinite(n)) return;
+    const priority = Math.trunc(n);
+    const elem = state.elements.find((e) => e.id === elementId);
+    if (!elem) { closePriorityPopup(); return; }
+    if (elem.tags[tagName] === priority) { closePriorityPopup(); return; }
+
+    ensureTagUi(tagName);
+    elem.tags[tagName] = priority;
+    saveState();
+    render();
+
+    let newChip = null;
+    for (const c of document.querySelectorAll(".tagChip")) {
+      if (Number(c.dataset.elementId) === elementId && c.dataset.tagName === tagName) {
+        newChip = c;
+        break;
+      }
+    }
+
+    if (newChip) {
+      const row = newChip.closest(".elemRow");
+      if (row) row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      positionPopup(newChip);
+    } else {
+      closePriorityPopup();
+    }
+  }
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); }
+    if (ev.key === "Escape") { closePriorityPopup(); }
+  });
+
+  const outsideClick = (ev) => {
+    if (popup.contains(ev.target)) return;
+    closePriorityPopup();
+  };
+  popup._outsideClick = outsideClick;
+
+  setTimeout(() => {
+    document.addEventListener("click", outsideClick);
+  }, 0);
+}
+
 function openTagPopup(elementId, anchorBtn) {
   closeTagPopup();
+  closePriorityPopup();
 
   const el = state.elements.find((e) => e.id === elementId);
   if (!el) return;
@@ -633,6 +734,7 @@ function renderElements() {
   for (const el of els) {
     const row = document.createElement("div");
     row.className = "elemRow";
+    row.dataset.elementId = el.id;
 
     const idCell = document.createElement("div");
     idCell.className = "elemRow__id elemCell--id";
