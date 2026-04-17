@@ -589,7 +589,7 @@ function openPriorityPopup(elementId, tagName, chipEl) {
     const priority = Math.trunc(n);
     const elem = state.elements.find((e) => e.id === elementId);
     if (!elem) { closePriorityPopup(); return; }
-    if (elem.tags[tagName] === priority) { closePriorityPopup(); return; }
+    if (elem.tags[tagName] === priority) return;
 
     ensureTagUi(tagName);
     elem.tags[tagName] = priority;
@@ -613,8 +613,9 @@ function openPriorityPopup(elementId, tagName, chipEl) {
     }
   }
 
+  input.addEventListener("input", applyChange);
   input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); }
+    if (ev.key === "Enter") { ev.preventDefault(); closePriorityPopup(); }
     if (ev.key === "Escape") { closePriorityPopup(); }
   });
 
@@ -918,22 +919,41 @@ function renderSortPanel() {
   }
 
   for (const { key, tri } of enabledEntries) {
-    const row = document.createElement("button");
+    const row = document.createElement("div");
     row.className = `${sortPillClass(tri)} enabledItem`;
     row.draggable = true;
     row.dataset.key = key;
-    row.type = "button";
-    row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
-    row.title = "Click: asc → desc → off. Drag to reorder.";
-    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Click to change. Drag to reorder.`);
-    row.onclick = () => {
-      const next = cycleSortTri(currentSortTriForKey(key));
+    row.title = "Click the label to toggle asc/desc. Drag to reorder.";
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Toggle to change direction. Drag to reorder.`);
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "enabledItem__toggle";
+    toggleBtn.type = "button";
+    toggleBtn.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "▲" : "▼"}`;
+    toggleBtn.title = "Toggle asc/desc";
+    toggleBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      const current = currentSortTriForKey(key);
+      const next = current === SortTri.ASC ? SortTri.DESC : SortTri.ASC;
       setSortTriForKey(key, next);
-      if (next === SortTri.OFF) disableSortKey(key);
       saveState();
       render();
     };
 
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "enabledItem__remove";
+    removeBtn.type = "button";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Disable sort criterion";
+    removeBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      setSortTriForKey(key, SortTri.OFF);
+      disableSortKey(key);
+      saveState();
+      render();
+    };
+
+    row.append(toggleBtn, removeBtn);
     enabled.appendChild(row);
   }
 
