@@ -765,10 +765,9 @@ function renderSortPanel() {
     row.type = "button";
     row.textContent = `${getSortKeyLabel(key)} ${tri === SortTri.ASC ? "asc" : "desc"}`;
     row.title = "Click: asc → desc → off. Drag to reorder.";
-    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "ascending" : "descending"}. Click to change. Drag to reorder.`);
+    row.setAttribute("aria-label", `${getSortKeyLabel(key)} sort ${tri === SortTri.ASC ? "asc" : "desc"}. Click to change. Drag to reorder.`);
     row.onclick = () => {
-      const current = currentSortTriForKey(key);
-      const next = current === SortTri.ASC ? SortTri.DESC : current === SortTri.DESC ? SortTri.OFF : SortTri.ASC;
+      const next = cycleSortTri(currentSortTriForKey(key));
       setSortTriForKey(key, next);
       if (next === SortTri.OFF) disableSortKey(key);
       saveState();
