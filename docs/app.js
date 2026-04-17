@@ -1006,6 +1006,7 @@ function renderSortPanel() {
     });
 
     let holdTimer = null;
+    let suppressClickUntil = 0;
     const HOLD_TO_DRAG_MS = 260;
 
     const clearHoldTimer = () => {
@@ -1017,7 +1018,6 @@ function renderSortPanel() {
     row.addEventListener("pointerdown", (ev) => {
       if (ev.button !== 0) return;
       if (removeBtn.contains(ev.target)) return;
-      row.dataset.justDragged = "";
       clearHoldTimer();
       holdTimer = setTimeout(() => {
         row.draggable = true;
@@ -1045,16 +1045,13 @@ function renderSortPanel() {
 
     row.addEventListener("dragend", () => {
       row.dataset.dragging = "";
-      row.dataset.justDragged = "1";
+      suppressClickUntil = performance.now() + 250;
       row.draggable = false;
-      setTimeout(() => {
-        row.dataset.justDragged = "";
-      }, 0);
     });
 
     row.addEventListener("click", (ev) => {
       if (removeBtn.contains(ev.target)) return;
-      if (row.dataset.justDragged === "1") return;
+      if (performance.now() < suppressClickUntil) return;
       toggleSortDirection();
     });
 
