@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Tagged Table</title>
+</head>
+<body>
+    <h1>Tagged Table</h1>
+    <div id="app">
+        <input type="text" id="elementInput" placeholder="Add new element">
+        <input type="text" id="tagInput" placeholder="Add tags (comma separated)">
+        <button id="addElement">Add Element</button>
+        <div id="elementList"></div>
+        <div id="filterPanel">
+            <h2>Filter</h2>
+            <input type="text" id="filterText" placeholder="Text contains">
+            <div id="tagFilters"></div>
+        </div>
+        <div id="sortPanel">
+            <h2>Sort</h2>
+            <div id="sortCriteria"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
