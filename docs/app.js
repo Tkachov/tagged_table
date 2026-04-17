@@ -520,6 +520,101 @@ function renderTagChip(el, tagName) {
   return chip;
 }
 
+let _tagPopup = null;
+
+function closeTagPopup() {
+  if (_tagPopup) {
+    _tagPopup.remove();
+    _tagPopup = null;
+  }
+}
+
+function openTagPopup(elementId, anchorBtn) {
+  closeTagPopup();
+
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return;
+
+  const popup = document.createElement("div");
+  popup.className = "tagPopup";
+  _tagPopup = popup;
+
+  const search = document.createElement("input");
+  search.className = "tagPopup__search";
+  search.type = "text";
+  search.placeholder = "Search…";
+  popup.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "tagPopup__list";
+  popup.appendChild(list);
+
+  function getAvailable(query) {
+    const q = query.trim().toLowerCase();
+    return state.tags.filter(
+      (t) => !Object.prototype.hasOwnProperty.call(el.tags, t) && (q === "" || t.toLowerCase().includes(q))
+    );
+  }
+
+  function selectTag(tagName) {
+    const normalized = normalizeTagName(tagName);
+    if (!isValidTagName(normalized)) { toast("Invalid tag name"); return; }
+    closeTagPopup();
+    setElementTagPriority(elementId, normalized, 1);
+  }
+
+  function buildList(query) {
+    list.innerHTML = "";
+    const available = getAvailable(query);
+    const q = query.trim();
+
+    for (const tagName of available) {
+      const item = document.createElement("div");
+      item.className = "tagPopup__item";
+      item.textContent = tagName;
+      item.onclick = (ev) => { ev.stopPropagation(); selectTag(tagName); };
+      list.appendChild(item);
+    }
+
+    if (q && !state.tags.some((t) => t.toLowerCase() === q.toLowerCase())) {
+      const createItem = document.createElement("div");
+      createItem.className = "tagPopup__item tagPopup__item--create";
+      createItem.textContent = `Create new tag "${q}"`;
+      createItem.onclick = (ev) => { ev.stopPropagation(); selectTag(q); };
+      list.appendChild(createItem);
+    }
+
+    if (list.children.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "tagPopup__empty";
+      empty.textContent = "No tags available";
+      list.appendChild(empty);
+    }
+  }
+
+  buildList("");
+  search.oninput = () => buildList(search.value);
+
+  // Position the popup below the anchor button
+  document.body.appendChild(popup);
+  const rect = anchorBtn.getBoundingClientRect();
+  const popupH = popup.offsetHeight;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const top = spaceBelow >= popupH + 4 ? rect.bottom + 4 : rect.top - popupH - 4;
+  let left = rect.left;
+  if (left + 200 > window.innerWidth - 8) left = window.innerWidth - 208;
+  popup.style.top = `${top}px`;
+  popup.style.left = `${left}px`;
+
+  // Focus search after positioning
+  search.focus();
+
+  // Close on outside click (next tick so this click doesn't immediately close it)
+  setTimeout(() => {
+    document.addEventListener("click", closeTagPopup, { once: true });
+  }, 0);
+}
+
 function renderElements() {
   const container = $("elements");
   container.innerHTML = "";
@@ -561,39 +656,16 @@ function renderElements() {
       tagsCell.appendChild(renderTagChip(el, tagName));
     }
 
-    const addChip = document.createElement("span");
-    addChip.className = "tagChip";
-    const addLabel = document.createElement("span");
-    addLabel.className = "tagChip__name";
-    addLabel.textContent = "Add tag";
-
-    const select = document.createElement("select");
-    select.className = "input";
-    select.style.padding = "6px 10px";
-    select.style.width = "160px";
-
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = "Choose…";
-    select.appendChild(opt0);
-
-    for (const tagName of state.tags) {
-      if (Object.prototype.hasOwnProperty.call(el.tags, tagName)) continue;
-      const opt = document.createElement("option");
-      opt.value = tagName;
-      opt.textContent = tagName;
-      select.appendChild(opt);
-    }
-
-    select.onchange = () => {
-      const t = select.value;
-      if (!t) return;
-      setElementTagPriority(el.id, t, 1);
-      select.value = "";
+    const addTagBtn = document.createElement("button");
+    addTagBtn.className = "elemRow__addTag";
+    addTagBtn.textContent = "+";
+    addTagBtn.title = "Add tag";
+    addTagBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      openTagPopup(el.id, addTagBtn);
     };
 
-    addChip.append(addLabel, select);
-    tagsCell.appendChild(addChip);
+    tagsCell.appendChild(addTagBtn);
 
     const delBtn = document.createElement("button");
     delBtn.className = "elemRow__del elemCell--del";
