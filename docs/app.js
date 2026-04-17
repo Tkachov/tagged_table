@@ -589,7 +589,9 @@ function openPriorityPopup(elementId, tagName, chipEl) {
     const priority = Math.trunc(n);
     const elem = state.elements.find((e) => e.id === elementId);
     if (!elem) { closePriorityPopup(); return; }
-    if (elem.tags[tagName] === priority) return;
+    if (elem.tags[tagName] === priority) {
+      return;
+    }
 
     ensureTagUi(tagName);
     elem.tags[tagName] = priority;
@@ -615,8 +617,14 @@ function openPriorityPopup(elementId, tagName, chipEl) {
 
   input.addEventListener("input", applyChange);
   input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") { ev.preventDefault(); applyChange(); closePriorityPopup(); }
-    if (ev.key === "Escape") { closePriorityPopup(); }
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      applyChange();
+      closePriorityPopup();
+    }
+    if (ev.key === "Escape") {
+      closePriorityPopup();
+    }
   });
 
   const outsideClick = (ev) => {
