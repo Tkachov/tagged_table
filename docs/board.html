@@ -25,6 +25,10 @@
         Words per row:
         <input id="wordsPerRow" class="board-controls__input" type="number" value="40" min="1" max="500" />
       </label>
+      <label class="board-controls__label">
+        Rows per break:
+        <input id="rowsPerBreak" class="board-controls__input" type="number" value="25" min="1" max="500" />
+      </label>
       <button id="startInteractiveBtn" class="btn">Interactive mode</button>
     </div>
 
@@ -32,12 +36,14 @@
 
     <!-- Interactive mode overlay -->
     <div id="interactiveOverlay" class="int-overlay" hidden>
-      <button id="intClose" class="int-close" title="Close (discard current batch)">×</button>
       <div class="int-stage">
         <div id="intCards" class="int-cards"></div>
       </div>
-      <div id="intNext" class="int-next" title="Next batch">
-        <span class="int-next__arrow">›</span>
+      <div class="int-sidebar">
+        <button id="intClose" class="int-close" title="Close (discard current batch)">×</button>
+        <div id="intNext" class="int-next" title="Next batch">
+          <span class="int-next__arrow">›</span>
+        </div>
       </div>
     </div>
 

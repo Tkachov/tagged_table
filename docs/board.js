@@ -20,12 +20,14 @@ const L_TAG = "l";
 
 let state = loadState();
 let wordsPerRow = 40;
+let rowsPerBreak = 25;
 
 // Interactive mode
 let intActive = false;
 let intQueue = [];      // element IDs to process (snapshot, in order, no "l" tag at start)
 let intCursor = 0;      // current position in intQueue (start of current batch)
 let intPending = {};    // elementId → value: 1=green, 0=yellow, null=remove tag
+let intMode = "unlabeled";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -199,22 +201,49 @@ function renderGrid() {
     return;
   }
 
-  for (const el of state.elements) {
+  const breakEveryCells = cols * Math.max(1, rowsPerBreak);
+  for (let i = 0; i < state.elements.length; i++) {
+    const el = state.elements[i];
     const cell = document.createElement("div");
     cell.className = `word-cell word-cell--${getWordColor(el)}`;
-    cell.textContent = el.text;
     cell.title = el.text;
+    cell.setAttribute("aria-label", el.text);
+    cell.setAttribute("role", "button");
+    cell.tabIndex = 0;
+    cell.addEventListener("click", () => startInteractiveMode({ startId: el.id, includeTagged: true }));
+    cell.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        startInteractiveMode({ startId: el.id, includeTagged: true });
+      }
+    });
     grid.appendChild(cell);
+
+    if ((i + 1) % breakEveryCells === 0 && i < state.elements.length - 1) {
+      const br = document.createElement("div");
+      br.className = "board-grid__break";
+      br.setAttribute("aria-hidden", "true");
+      grid.appendChild(br);
+    }
   }
 }
 
 // ── Interactive mode ──────────────────────────────────────────────────────────
 
-function startInteractiveMode() {
-  // Snapshot of element IDs without the "l" tag, in original order
-  intQueue = state.elements
-    .filter((el) => !Object.prototype.hasOwnProperty.call(el.tags || {}, L_TAG))
-    .map((el) => el.id);
+function startInteractiveMode({ startId = null, includeTagged = false } = {}) {
+  if (includeTagged) {
+    const startIndex = state.elements.findIndex((el) => el.id === startId);
+    if (startIndex === -1) return;
+    intQueue = state.elements.slice(startIndex).map((el) => el.id);
+    intMode = "from-grid";
+  } else {
+    // Snapshot of element IDs without the "l" tag, in original order
+    intQueue = state.elements
+      .filter((el) => !Object.prototype.hasOwnProperty.call(el.tags || {}, L_TAG))
+      .map((el) => el.id);
+    intMode = "unlabeled";
+  }
+
   intCursor = 0;
   intPending = {};
 
@@ -245,13 +274,24 @@ function cardColorForId(elementId) {
     if (v === 1) return "green";
     if (v === 0) return "yellow";
   }
-  return "gray"; // elements in the queue have no "l" tag by definition
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return "gray";
+  return getWordColor(el);
+}
+
+function currentCardValue(elementId) {
+  if (Object.prototype.hasOwnProperty.call(intPending, elementId)) return intPending[elementId];
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el || !Object.prototype.hasOwnProperty.call(el.tags || {}, L_TAG)) return null;
+  if (el.tags[L_TAG] === 1) return 1;
+  if (el.tags[L_TAG] === 0) return 0;
+  return null;
 }
 
 function cycleCardState(elementId) {
-  const current = intPending[elementId];
+  const current = currentCardValue(elementId);
   // gray (undefined/null) → green (1) → yellow (0) → gray (null)
-  if (current === undefined || current === null) {
+  if (current === null) {
     intPending[elementId] = 1;
   } else if (current === 1) {
     intPending[elementId] = 0;
@@ -290,10 +330,8 @@ function renderIntCards() {
 }
 
 function applyIntPending() {
-  // Ensure "l" tag exists in the tag registry
-  if (!state.tags.includes(L_TAG)) {
-    state.tags.push(L_TAG);
-  }
+  const hasTagAssignments = Object.values(intPending).some((value) => value !== null);
+  if (hasTagAssignments && !state.tags.includes(L_TAG)) state.tags.push(L_TAG);
 
   for (const [idStr, value] of Object.entries(intPending)) {
     const id = Number(idStr);
@@ -301,8 +339,7 @@ function applyIntPending() {
     if (!el) continue;
 
     if (value === null) {
-      // Explicitly set to gray means leave untagged; skip (it was already untagged)
-      // (do nothing – the element stays without "l" tag)
+      delete el.tags[L_TAG];
     } else {
       el.tags[L_TAG] = value;
     }
@@ -326,7 +363,7 @@ function intNext() {
 
   if (intCursor >= intQueue.length) {
     closeInteractiveMode();
-    toast("Done! All words have been reviewed.");
+    toast(intMode === "from-grid" ? "Done! Reached the end of words." : "Done! All words have been reviewed.");
     return;
   }
 
@@ -380,6 +417,22 @@ function wireEvents() {
   });
   wprInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") wprInput.blur();
+  });
+
+  // Rows-per-break control
+  const rpbInput = $("rowsPerBreak");
+  rpbInput.value = String(rowsPerBreak);
+  rpbInput.addEventListener("change", () => {
+    const v = parseInt(rpbInput.value, 10);
+    if (!Number.isFinite(v) || v < 1) {
+      rpbInput.value = String(rowsPerBreak);
+      return;
+    }
+    rowsPerBreak = v;
+    renderGrid();
+  });
+  rpbInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") rpbInput.blur();
   });
 
   // Interactive mode
