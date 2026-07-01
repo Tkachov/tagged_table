@@ -59,8 +59,8 @@
 .word-cell:hover { filter: brightness(0.93); }
 
 .word-cell--gray   { background: #cbd5e1; }
-.word-cell--yellow { background: #f59e0b; }
-.word-cell--green  { background: #22c55e; }
+.word-cell--yellow { background: #b45309; }
+.word-cell--green  { background: #15803d; }
 
 .board-grid__break {
   grid-column: 1 / -1;
@@ -155,11 +155,11 @@
   color: #334155;
 }
 .int-card--yellow {
-  background: #f59e0b;
+  background: #b45309;
   color: #fff;
 }
 .int-card--green {
-  background: #22c55e;
+  background: #15803d;
   color: #fff;
 }
 

@@ -233,7 +233,10 @@ function renderGrid() {
 function startInteractiveMode({ startId = null, includeTagged = false } = {}) {
   if (includeTagged) {
     const startIndex = state.elements.findIndex((el) => el.id === startId);
-    if (startIndex === -1) return;
+    if (startIndex === -1) {
+      toast("Could not find the selected word.");
+      return;
+    }
     intQueue = state.elements.slice(startIndex).map((el) => el.id);
     intMode = "from-grid";
   } else {
@@ -289,6 +292,8 @@ function currentCardValue(elementId) {
 }
 
 function cycleCardState(elementId) {
+  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) return;
   const current = currentCardValue(elementId);
   // gray (undefined/null) → green (1) → yellow (0) → gray (null)
   if (current === null) {
@@ -330,7 +335,8 @@ function renderIntCards() {
 }
 
 function applyIntPending() {
-  const hasTagAssignments = Object.values(intPending).some((value) => value !== null);
+  const pendingValues = Object.values(intPending);
+  const hasTagAssignments = pendingValues.length > 0 && pendingValues.some((value) => value !== null);
   if (hasTagAssignments && !state.tags.includes(L_TAG)) state.tags.push(L_TAG);
 
   for (const [idStr, value] of Object.entries(intPending)) {
