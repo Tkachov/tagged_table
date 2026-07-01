@@ -1,0 +1,191 @@
+/* ── Board page ── */
+
+/* Controls bar */
+.board-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  position: sticky;
+  top: 33px; /* height of menubar */
+  z-index: 40;
+}
+
+.board-controls__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+  user-select: none;
+}
+
+.board-controls__input {
+  width: 70px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text);
+  outline: none;
+}
+.board-controls__input:focus {
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+/* Word grid */
+.board-grid {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px 40px;
+  /* grid-template-columns set by JS */
+}
+
+.word-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  min-height: 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  transition: filter 80ms ease;
+}
+.word-cell:hover { filter: brightness(0.93); }
+
+.word-cell--gray   { background: #cbd5e1; color: #475569; }
+.word-cell--yellow { background: #fde68a; color: #78350f; }
+.word-cell--green  { background: #bbf7d0; color: #14532d; }
+
+/* ── Interactive mode overlay ── */
+.int-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(4px);
+}
+.int-overlay[hidden] { display: none; }
+
+/* Close button – top-right corner (above the next strip) */
+.int-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 215; /* above .int-next */
+  transition: background 120ms ease;
+}
+.int-close:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* Center stage – where cards live */
+.int-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 96px 0 16px; /* right gap = next-strip width (80px) + 16px margin */
+}
+
+/* Cards row */
+.int-cards {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  max-width: 1300px;
+}
+
+.int-card {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 3px solid transparent;
+  font-size: clamp(14px, 1.8vw, 24px);
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
+  padding: 20px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.int-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.int-card--gray {
+  background: #e2e8f0;
+  color: #334155;
+  border-color: #94a3b8;
+}
+.int-card--yellow {
+  background: #fde68a;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+.int-card--green {
+  background: #bbf7d0;
+  color: #14532d;
+  border-color: #22c55e;
+}
+
+/* Empty message inside cards area */
+.int-empty {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  text-align: center;
+}
+
+/* Next strip – right border */
+.int-next {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 120ms ease;
+  z-index: 205;
+}
+.int-next:hover { background: rgba(255, 255, 255, 0.14); }
+
+.int-next__arrow {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 56px;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
