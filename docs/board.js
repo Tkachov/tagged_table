@@ -219,7 +219,7 @@ function startInteractiveMode() {
   intPending = {};
 
   if (intQueue.length === 0) {
-    toast('All words already have the "l" tag.');
+    toast(`All words already have the "l" tag.`);
     return;
   }
 
@@ -371,7 +371,10 @@ function wireEvents() {
   wprInput.value = String(wordsPerRow);
   wprInput.addEventListener("change", () => {
     const v = parseInt(wprInput.value, 10);
-    if (!Number.isFinite(v) || v < 1) { wprInput.value = String(wordsPerRow); return; }
+    if (!Number.isFinite(v) || v < 1) {
+      wprInput.value = String(wordsPerRow);
+      return;
+    }
     wordsPerRow = v;
     renderGrid();
   });
