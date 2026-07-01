@@ -230,7 +230,11 @@ function renderGrid() {
 
 // ── Interactive mode ──────────────────────────────────────────────────────────
 
-function startInteractiveMode({ startId = null, includeTagged = false } = {}) {
+function startInteractiveMode(options = {}) {
+  const opts = options && typeof options === "object" ? options : {};
+  const startId = Object.prototype.hasOwnProperty.call(opts, "startId") ? opts.startId : null;
+  const includeTagged = opts.includeTagged === true || startId !== null;
+
   if (includeTagged) {
     const startIndex = state.elements.findIndex((el) => el.id === startId);
     if (startIndex === -1) {
@@ -282,9 +286,9 @@ function cardColorForId(elementId) {
   return getWordColor(el);
 }
 
-function currentCardValue(elementId) {
+function currentCardValue(elementId, el = null) {
   if (Object.prototype.hasOwnProperty.call(intPending, elementId)) return intPending[elementId];
-  const el = state.elements.find((e) => e.id === elementId);
+  if (!el) el = state.elements.find((e) => e.id === elementId);
   if (!el || !Object.prototype.hasOwnProperty.call(el.tags || {}, L_TAG)) return null;
   if (el.tags[L_TAG] === 1) return 1;
   if (el.tags[L_TAG] === 0) return 0;
@@ -294,7 +298,7 @@ function currentCardValue(elementId) {
 function cycleCardState(elementId) {
   const el = state.elements.find((e) => e.id === elementId);
   if (!el) return;
-  const current = currentCardValue(elementId);
+  const current = currentCardValue(elementId, el);
   // gray (undefined/null) → green (1) → yellow (0) → gray (null)
   if (current === null) {
     intPending[elementId] = 1;
